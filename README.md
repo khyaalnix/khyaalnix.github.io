@@ -49,18 +49,40 @@ This repository is configured with GitHub Actions for automatic deployment.
    git add .
    git commit -m "Initial commit"
    git remote add origin https://github.com/khyaalnix/khyaalnix.github.io.git
-   git push -u origin develop
+   git push -u origin main
    ```
 
 3. **Enable GitHub Pages in repository settings:**
    - Go to your repository on GitHub
    - Navigate to **Settings** → **Pages**
    - Under **Source**, select **GitHub Actions**
-   - The site will automatically deploy on every push to `main` or `develop` branch
 
-4. **Access your site:**
+4. **Deployment Triggers:**
+
+   The site will automatically deploy when:
+   - **Direct push to `main`** - Deploys immediately
+   - **Version tag from `main`** - Release deployment (format: `v1.0.0`, `v2.1.3`, etc.)
+   - **Beta tag from `develop`** - Beta deployment (format: `v1.beta.1`, `v2.beta.5`, etc.)
+   - **Manual trigger** - Via GitHub Actions "Run workflow" button
+
+5. **Creating Version Tags:**
+
+   **For production release (from main branch):**
+   ```bash
+   git checkout main
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+   **For beta release (from develop branch):**
+   ```bash
+   git checkout develop
+   git tag v1.beta.1
+   git push origin v1.beta.1
+   ```
+
+6. **Access your site:**
    - Your site will be available at: `https://khyaalnix.github.io/`
-   - The GitHub Actions workflow will build and deploy automatically
 
 ### Method 2: Manual Deployment
 
