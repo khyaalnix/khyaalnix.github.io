@@ -1,0 +1,59 @@
+{
+  "moments": [
+    {
+      "time": {
+        "year": 2020,
+        "month": 1
+      },
+      "image": "img/profile.jpg",
+      "title": "The Beginning",
+      "description": "Started my journey in software engineering",
+      "weight": 8
+    },
+    {
+      "time": {
+        "year": 2020,
+        "month": 8
+      },
+      "title": "First Internship",
+      "description": "Joined my first tech company",
+      "weight": 6
+    },
+    {
+      "time": {
+        "year": 2021,
+        "month": 6
+      },
+      "title": "Graduated",
+      "description": "Completed Bachelor's in Computer Science",
+      "weight": 9
+    },
+    {
+      "time": {
+        "year": 2022,
+        "month": 3
+      },
+      "title": "First Full-time Role",
+      "description": "Started working on distributed systems",
+      "weight": 7
+    },
+    {
+      "time": {
+        "year": 2023,
+        "month": 9
+      },
+      "title": "Published First Blog",
+      "description": "Shared my thoughts on system design",
+      "weight": 5
+    },
+    {
+      "time": {
+        "year": 2024,
+        "month": 12
+      },
+      "title": "Present Day",
+      "description": "Building scalable platforms",
+      "weight": 8
+    }
+  ]
+}
