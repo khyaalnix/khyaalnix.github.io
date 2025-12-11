@@ -13,4 +13,7 @@ overfitting:
   permalink: /overfitting
   description: Overfitting tag description
 
-
+alexnet: 
+  label: AlexNet
+  permalink: /alexnet
+  description: AlexNet tag description

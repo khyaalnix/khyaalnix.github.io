@@ -30,17 +30,16 @@ function HomepageContent() {
       <p className={styles.intro}>i am nikhil.</p>
 
       <p className={styles.paragraph}>
-        i studied computer science in undergrad, and learned systems engineering, distributed architecture,
-        and full-stack development alongside my work experience solely due to my interest in building things
-        that scale and solve real problems.
+        i studied information science in undergrad, and learned systems engineering, distributed architecture,
+        longside my work experience solely due to my interest in building things that scale and solve real problems.
       </p>
 
       <p className={styles.paragraph}>
         my aim is to build robust, scalable systems that people can rely on. personally, i would like to
         understand more about what's going under the hood of complex distributed systems responsible for
         deciding whether to scale up or down, how to handle failures gracefully, or what patterns to use
-        when building microservices. in addition, my interest lies in platform engineering, infrastructure
-        as code, and cloud-native technologies so i try to keep myself up to date on these topics too.
+        when building microservices. in addition, my interest lies in generative intelligence and connecting it
+        with physical intelligence so i try to keep myself up to date on these topics too.
       </p>
 
       <p className={styles.paragraph}>

@@ -100,6 +100,11 @@ const config: Config = {
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/lamhe', label: 'Lamhe', position: 'left'},
         {
+          href: 'https://drive.google.com/file/d/1BdiLpn0rwnWkD79A0CEvXxqI2w_JVN0b/view?usp=sharing',
+          label: 'CV',
+          position: 'left',
+        },
+        {
           href: 'https://github.com/khyaalnix',
           position: 'right',
           className: 'header-github-link',
