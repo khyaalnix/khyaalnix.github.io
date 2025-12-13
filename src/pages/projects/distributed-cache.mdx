@@ -1,0 +1,98 @@
+---
+title: Distributed Cache System
+description: High-performance distributed caching layer with Redis integration for low-latency data access across multiple nodes.
+---
+
+import ProjectLayout from '@site/src/components/ProjectLayout';
+
+<ProjectLayout title="Distributed Cache System" tags={['Go', 'Redis', 'Distributed Systems']}>
+
+## Overview
+
+A distributed cache system built for high-performance, low-latency data access across multiple nodes. This project demonstrates advanced distributed systems concepts including consistent hashing, replication strategies, and fault tolerance.
+
+## Architecture
+
+The system is designed with a three-tier architecture:
+
+- **Client Layer**: Provides a simple API for cache operations
+- **Cache Coordinator**: Manages node discovery and request routing
+- **Storage Nodes**: Handle actual data storage with Redis backend
+
+### Key Components
+
+1. **Consistent Hashing**: Ensures even distribution of keys across nodes
+2. **Replication**: Each key is replicated across multiple nodes for fault tolerance
+3. **Health Monitoring**: Automatic detection and removal of failed nodes
+
+## Technical Stack
+
+- **Language**: Go 1.21+
+- **Cache Backend**: Redis 7.0
+- **Service Discovery**: Consul
+- **Monitoring**: Prometheus + Grafana
+
+## Performance Metrics
+
+- **Latency**: Sub-millisecond response time (p99 < 2ms)
+- **Throughput**: 100K+ requests per second per node
+- **Availability**: 99.99% uptime with automatic failover
+
+## Key Features
+
+### Intelligent Request Routing
+
+The cache coordinator uses consistent hashing to determine which nodes should store each key:
+
+```go
+func (c *Coordinator) GetNode(key string) *Node {
+    hash := c.hashRing.GetNode(key)
+    return c.nodes[hash]
+}
+```
+
+### Automatic Failover
+
+When a node fails, the system automatically redistributes its keys to healthy nodes:
+
+- Health checks every 5 seconds
+- Automatic node removal on failure
+- Data replication to maintain redundancy
+
+### Write-Through Caching
+
+All writes are immediately persisted to the backing store while updating the cache:
+
+1. Write to cache
+2. Asynchronously write to database
+3. Confirm to client
+
+## Challenges Solved
+
+### 1. Cache Invalidation
+
+Implemented a pub/sub mechanism using Redis channels to propagate invalidation events across all nodes.
+
+### 2. Split-Brain Prevention
+
+Used distributed consensus (Raft) to ensure all nodes have a consistent view of the cluster state.
+
+### 3. Memory Management
+
+Implemented LRU eviction policies with configurable memory limits per node.
+
+## Lessons Learned
+
+- Consistent hashing is crucial for scalability
+- Health monitoring must be aggressive to maintain availability
+- Replication factor affects both reliability and cost
+- Monitoring and observability are non-negotiable in distributed systems
+
+## Future Improvements
+
+- [ ] Add support for geo-replication
+- [ ] Implement read-through caching
+- [ ] Add compression for large values
+- [ ] Support for cache warming on node startup
+
+</ProjectLayout>

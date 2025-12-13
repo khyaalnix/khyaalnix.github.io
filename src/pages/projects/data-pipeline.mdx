@@ -1,0 +1,267 @@
+---
+title: Data Pipeline Framework
+description: Real-time data processing pipeline with stream processing, ETL workflows, and automated data quality checks.
+---
+
+import ProjectLayout from '@site/src/components/ProjectLayout';
+
+<ProjectLayout title="Data Pipeline Framework" tags={['Apache Kafka', 'Python', 'Spark']}>
+
+## Overview
+
+A real-time data processing pipeline designed to handle millions of events per day with automated data quality checks, transformations, and multi-destination routing. This system processes streaming data from various sources and makes it available for analytics and business intelligence.
+
+## Architecture
+
+### Pipeline Stages
+
+1. **Ingestion**: Collect data from multiple sources
+2. **Processing**: Transform and enrich data in real-time
+3. **Validation**: Apply quality checks and filters
+4. **Storage**: Write to multiple destinations
+5. **Monitoring**: Track pipeline health and data quality
+
+### Data Flow
+
+```
+Sources → Kafka → Stream Processing → Validation → Destinations
+  ↓                      ↓                  ↓            ↓
+Logs              Transformations      Quality      Analytics
+APIs              Enrichment          Checks        Database
+Events            Aggregations        Alerts        Data Lake
+```
+
+## Technical Components
+
+### Ingestion Layer
+
+**Apache Kafka** as the central message bus:
+- High throughput (millions of messages/sec)
+- Durable message storage
+- Multiple consumer groups for different use cases
+- Exactly-once semantics
+
+**Source Connectors**:
+- REST API ingestion
+- Database CDC (Change Data Capture)
+- Log file tailing
+- Third-party webhooks
+
+### Processing Layer
+
+**Apache Spark Structured Streaming**:
+```python
+# Example: Real-time aggregation
+events = spark.readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", "localhost:9092") \
+    .option("subscribe", "events") \
+    .load()
+
+# Parse JSON and apply transformations
+parsed = events.selectExpr("CAST(value AS STRING)") \
+    .select(from_json(col("value"), schema).alias("data")) \
+    .select("data.*")
+
+# Aggregate in tumbling windows
+aggregated = parsed \
+    .groupBy(
+        window(col("timestamp"), "5 minutes"),
+        col("user_id")
+    ) \
+    .agg(
+        count("*").alias("event_count"),
+        approx_count_distinct("session_id").alias("sessions")
+    )
+```
+
+### Data Quality Framework
+
+Custom quality checks implemented as Spark UDFs:
+
+**Completeness Checks**:
+- Required field validation
+- Null value detection
+- Schema compliance
+
+**Consistency Checks**:
+- Referential integrity
+- Format validation (email, phone, etc.)
+- Business rule validation
+
+**Timeliness Checks**:
+- Event timestamp validation
+- Processing delay monitoring
+- Late data handling
+
+### Storage Layer
+
+**Multi-Destination Support**:
+
+1. **Data Lake (S3)**: Raw and processed data in Parquet format
+2. **Data Warehouse (Redshift)**: Aggregated data for analytics
+3. **NoSQL (MongoDB)**: Real-time access patterns
+4. **Cache (Redis)**: Frequently accessed metrics
+
+## Key Features
+
+### 1. Schema Evolution
+
+Support for backward-compatible schema changes:
+- Avro schema registry integration
+- Automatic schema versioning
+- Schema validation on write
+
+### 2. Exactly-Once Processing
+
+Implemented using:
+- Kafka transactional producers
+- Idempotent consumers
+- Delta Lake for ACID guarantees
+
+### 3. Error Handling
+
+Multi-tier error handling strategy:
+```python
+try:
+    process_record(record)
+except ValidationError as e:
+    send_to_dlq(record, error=str(e))
+    emit_metric("validation_error")
+except TransientError as e:
+    retry_with_backoff(record)
+except FatalError as e:
+    alert_oncall(record, error=str(e))
+    stop_pipeline()
+```
+
+### 4. Backpressure Management
+
+Automatic throttling when:
+- Downstream systems are slow
+- Memory usage is high
+- Error rates spike
+
+## Monitoring & Alerting
+
+### Metrics Tracked
+
+**Pipeline Health**:
+- Records processed/sec
+- Processing latency (p50, p95, p99)
+- Error rates by type
+- Consumer lag
+
+**Data Quality**:
+- Schema violations
+- Null rates per field
+- Duplicate records
+- Data freshness
+
+**Infrastructure**:
+- CPU and memory usage
+- Disk I/O
+- Network throughput
+- Kafka partition lag
+
+### Alert Conditions
+
+- Consumer lag > 1 million messages
+- Error rate > 1%
+- Processing latency p99 > 10 seconds
+- Data freshness > 1 hour
+
+## Performance Optimization
+
+### 1. Partitioning Strategy
+
+Optimized Kafka partitioning:
+- User-based partitioning for related events
+- 50 partitions per topic for parallelism
+- Partition key selection based on cardinality
+
+### 2. Micro-batching
+
+Tuned Spark streaming for efficiency:
+- Batch interval: 10 seconds
+- Trigger interval: 5 seconds
+- Checkpoint interval: 30 seconds
+
+### 3. Caching Strategy
+
+Redis cache for:
+- Enrichment data lookup
+- Deduplication windows
+- Rate limiting counters
+
+## Challenges Solved
+
+### Late Arriving Data
+
+**Problem**: Events arrive out of order
+
+**Solution**:
+- Watermarking with 1-hour grace period
+- Stateful processing with late data handling
+- Separate late-data processing pipeline
+
+### Data Skew
+
+**Problem**: Uneven distribution causing hot partitions
+
+**Solution**:
+- Salting technique for high-cardinality keys
+- Dynamic repartitioning based on load
+- Custom partitioner for even distribution
+
+### Pipeline Recovery
+
+**Problem**: Recovering from failures without data loss
+
+**Solution**:
+- Kafka offset management
+- Checkpointing every 30 seconds
+- Idempotent processing logic
+
+## Results & Impact
+
+### Performance Metrics
+- **Throughput**: 5 million events/hour
+- **Latency**: p99 < 5 seconds end-to-end
+- **Availability**: 99.9% uptime
+- **Cost**: 40% reduction vs batch processing
+
+### Business Impact
+- Real-time analytics enabled
+- Reduced data processing time from hours to seconds
+- Improved data quality (95% → 99.5%)
+- Enabled new use cases (fraud detection, personalization)
+
+## Technology Stack
+
+- **Stream Processing**: Apache Spark, Apache Flink
+- **Message Queue**: Apache Kafka
+- **Orchestration**: Apache Airflow
+- **Storage**: S3, Redshift, MongoDB
+- **Monitoring**: Prometheus, Grafana, Datadog
+- **Languages**: Python, Scala
+- **Data Format**: Avro, Parquet, JSON
+
+## Lessons Learned
+
+- Start simple, add complexity as needed
+- Monitoring is crucial for debugging stream processing
+- Schema management prevents most production issues
+- Dead letter queues are essential for error handling
+- Testing streaming pipelines requires different strategies
+- Backpressure mechanisms prevent cascading failures
+
+## Future Enhancements
+
+- [ ] Add machine learning model serving in pipeline
+- [ ] Implement feature store integration
+- [ ] Add support for graph processing
+- [ ] Multi-cloud deployment support
+- [ ] Real-time data quality scoring
+
+</ProjectLayout>
