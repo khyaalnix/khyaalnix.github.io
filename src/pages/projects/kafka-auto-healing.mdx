@@ -1,0 +1,176 @@
+---
+title: Kafka Auto-Healing Consumer
+description: Production-grade Kafka consumer framework with auto-healing and schema evolution processing 10M+ daily events.
+---
+
+import ProjectLayout from '@site/src/components/ProjectLayout';
+
+<ProjectLayout title="Kafka Auto-Healing Consumer" tags={['Python', 'Kafka', 'Avro', 'Schema Registry', 'GCP']}>
+
+## Executive Summary
+
+Engineered a **production-grade Kafka consumer framework (1,246 lines)** with **backward-compatible schema evolution** and **auto-healing capabilities** processing **10M+ events/day** at **99.99% reliability**. The system automatically handles schema changes, detects field type incompatibilities, prevents data corruption through collision detection, and self-heals from broker failures, schema registry outages, and network partitions—achieving **zero data loss** over 180+ days and **&lt;15s recovery time** from broker failures.
+
+---
+
+## Schema Backward Compatibility System
+
+### Core Innovation: Conflict-Free Schema Evolution
+
+**Challenge:** Events arrive with arbitrary fields from multiple SDK versions. Schema changes must not break downstream consumers or corrupt historical data in BigQuery (which is case-insensitive).
+
+**Solution:** Multi-layer backward compatibility system using **O(n) single-pass validation**.
+
+#### 1. Incompatible Field Detection & Case-Collision Logic
+**Algorithm:** Proactively drops fields with case-collisions (UserName vs username) or incompatible type flips.
+
+```python
+def _drop_incompatible_fields(self, flat_dynamic_payload, existing_schema_dict):
+    """
+    Remove fields with case-collisions or incompatible types against existing schema.
+    O(n) single-pass validation for performance.
+    """
+    existing_field_types = {
+        f['name']: f['type'] for f in (existing_schema_dict or {}).get('fields', [])
+    }
+    
+    lowercase_map = {}
+    fields_to_drop = set()
+    
+    # 1. Validate lowercase collisions - prevent data corruption
+    for k in flat_dynamic_payload.keys():
+        k_lower = k.lower()
+        if k_lower in lowercase_map:
+            original_field = lowercase_map[k_lower]
+            # COLLISION: "UserName" vs "username" -> both dropped
+            fields_to_drop.add(original_field)
+            fields_to_drop.add(k)
+        else:
+            lowercase_map[k_lower] = k
+    
+    # 2. Type compatibility check
+    clean_dynamic = {}
+    for k, v in flat_dynamic_payload.items():
+        if k in fields_to_drop: continue
+        
+        t = existing_field_types.get(k)
+        if t is None:
+            clean_dynamic[k] = v; continue
+        
+        prim = self._infer_primitive_type(v)
+        if prim not in self._get_existing_prims(t):
+            # TYPE FLIP: Field was "string", now "double" -> dropped
+            logger.warning(f"Dropping field '{k}' due to type flip")
+            continue
+        
+        clean_dynamic[k] = v
+    return clean_dynamic
+```
+
+#### 2. Type Preservation
+Once a field's type is registered in the Schema Registry, it is **immutable**. This ensures that the schema generated for Kafka exactly matches what BigQuery expects.
+
+---
+
+## Auto-Healing Architecture
+
+### Multi-Layer Fault Tolerance
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│              KAFKA CONSUMER AUTO-HEALING SYSTEM               │
+└──────────────────────────────────────────────────────────────┘
+
+Layer 1: Exponential Backoff Retry (with Jitter)
+┌─────────────────────────────────────┐
+│  Retry sequence: 1s, 2s, 4s, 8s...  │
+│  Prevents thundering herd problem   │
+└─────────────────────────────────────┘
+         │
+         ▼
+Layer 2: Dead Letter Queue (DLQ)
+┌─────────────────────────────────────┐
+│  Message preserved with rich context│
+│  Enables manual replay & debugging  │
+└─────────────────────────────────────┘
+         │
+         ▼
+Layer 3: Alert Throttling (Redis-based)
+┌─────────────────────────────────────┐
+│  Severity-based cooldown periods    │
+│  Prevents 10K+ alerts during outages│
+└─────────────────────────────────────┘
+         │
+         ▼
+Layer 4: Thread-Safe Health Monitoring
+┌─────────────────────────────────────┐
+│  Background thread checks lag/health│
+│  Alerts if lag > 100K messages      │
+└─────────────────────────────────────┘
+```
+
+### 1. Exponential Backoff with Jitter
+**Implementation:** Prevents thundering herd by spreading retries across different pods.
+
+```python
+def retry_with_backoff(func, max_retries, backoff_factor=0.5):
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            return func()
+        except Exception as e:
+            attempt += 1
+            # Exponential backoff: 0.5 * (2^attempt) + random jitter
+            backoff_time = min(backoff_factor * (2 ** attempt), 60)
+            backoff_time += random.uniform(0, 0.5)
+            time.sleep(backoff_time)
+```
+
+### 2. Precise Partition Lag Calculation
+**Design:** Calculating lag accurately by comparing high watermarks with the *actual current position* of the consumer.
+
+```python
+def _get_partition_lag(self, consumer, partition):
+    # Get high watermark (latest offset in partition)
+    low, high = consumer.get_watermark_offsets(partition)
+    # Get consumer's CURRENT position (not just committed)
+    position_result = consumer.position([partition])
+    if position_result:
+        current_position = position_result[0].offset
+        return max(0, high - current_position)
+    return 0
+```
+
+### 3. Severity-Based Alert Throttling
+**Mechanism:** Critical alerts have a 1-minute cooldown, while low-severity alerts wait 20 minutes. Uses Redis `SETNX` for cluster-wide deduplication.
+
+---
+
+## High-Performance Optimizations
+
+1.  **LRU Serializer Cache:** Caches up to 100 serializers in an `OrderedDict` with thread-locking. Cache hit = **0.5ms**, Cache miss = **50ms**.
+2.  **Double-Check Locking:** Prevents multiple threads from creating the same serializer during a cache miss.
+3.  **Thread-Safe Consumer Lock:** Critical because the health check thread and main processing loop both access the Kafka consumer object (which is not thread-safe).
+
+---
+
+## Production Reliability Metrics
+
+| Metric | Value | Recovery Time |
+|--------|-------|---------------|
+| **Message Success Rate** | 99.99% | **Broker Loss**: 8-15s |
+| **Zero Data Loss Days** | 180+ | **Registry Outage**: Instant (Fallback) |
+| **Collision Detection Pairs** | 18 | **Partition Rebalance**: 10-30s |
+| **Type Flips Prevented** | 67 | **Redis Loss**: 5-10s |
+
+---
+
+## Real Production Incidents (Resolved)
+
+### Incident: Schema Registry Outage
+**Auto-Healing Response:** Detected connectivity failure, raised a `SchemaRegistryDownError`, and switched to **Fallback JSON Decoding**. Processed 2M+ events in degraded mode with zero data loss until the registry was restored.
+
+### Incident: Mobile SDK Version Field Flip
+**Auto-Healing Response:** A new SDK version erroneously changed `app_version` from string to int. The consumer detected the type flip, dropped the field for those events, and sent a one-time alert. The system continued processing thousands of events without crashing.
+
+</ProjectLayout>

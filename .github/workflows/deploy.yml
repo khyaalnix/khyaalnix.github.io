@@ -73,6 +73,9 @@ jobs:
             npm install
           fi
 
+      - name: Type check
+        run: npm run typecheck
+
       - name: Build website
         run: npm run build
 

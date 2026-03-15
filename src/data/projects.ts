@@ -28,4 +28,25 @@ export const projects: ProjectMetadata[] = [
     tags: ['Apache Kafka', 'Python', 'Spark'],
     slug: 'data-pipeline',
   },
+  {
+    id: 'cdp-platform',
+    title: 'Metadata-Driven CDP',
+    description: 'Production-grade Customer Data Platform processing 10M+ daily events using a metadata-driven Spark architecture.',
+    tags: ['Python', 'PySpark', 'Airflow', 'MongoDB', 'GCP'],
+    slug: 'cdp-platform',
+  },
+  {
+    id: 'journey-engine',
+    title: 'Real-Time Journey Engine',
+    description: 'Production-grade journey orchestration engine processing 100K+ daily events with <80ms p99 latency using PyFlink and Kafka.',
+    tags: ['Python', 'PyFlink', 'Kafka', 'Redis', 'MongoDB'],
+    slug: 'journey-engine',
+  },
+  {
+    id: 'kafka-auto-healing',
+    title: 'Kafka Auto-Healing Consumer',
+    description: 'Production-grade Kafka consumer framework with auto-healing and schema evolution processing 10M+ daily events.',
+    tags: ['Python', 'Kafka', 'Avro', 'Schema Registry', 'GCP'],
+    slug: 'kafka-auto-healing',
+  },
 ];
