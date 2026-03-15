@@ -54,7 +54,7 @@ const initialEdges = generatedEdges;
 export default function Lamhe() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges] = useEdgesState(initialEdges);
-  const resetTimeoutRef = useRef<NodeJS.Timeout>();
+  const resetTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Store original positions
   const originalPositionsRef = useRef(
